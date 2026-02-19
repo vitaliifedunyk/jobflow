@@ -136,7 +136,24 @@ export function renderApplicationsPage(rootEl) {
         <td class="px-3 py-2">${app.status}</td>
         <td class="px-3 py-2">${app.appliedDate}</td>
         <td class="px-3 py-2">${app.salary ?? "-"}</td>
-        <td class="px-3 py-2">...</td>
+        <td class="px-3 py-2">
+          <div class="flex gap-2">
+            <button
+              class="rounded border px-2 py-1 text-xs"
+              data-action="edit"
+              data-id="${app.id}"
+            >
+              Edit
+            </button>
+            <button
+              class="rounded border px-2 py-1 text-xs"
+              data-action="delete"
+              data-id="${app.id}"
+            >
+              Delete
+            </button>
+          </div>
+        </td>
       </tr>
     `),
     );
@@ -155,6 +172,23 @@ export function renderApplicationsPage(rootEl) {
   const addBtn = rootEl.querySelector("#addBtn");
   const modalEl = rootEl.querySelector("#appModal");
   const closeModalBtn = rootEl.querySelector("#closeModalBtn");
+  const tableBody = rootEl.querySelector("#tableBody");
+
+  tableBody.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+
+    if (action === "delete") {
+      const ok = confirm("Delete this application?");
+      if (!ok) return;
+
+      applications = applications.filter((app) => app.id !== id);
+      renderTable();
+    }
+  });
 
   addBtn.addEventListener("click", () => {
     modalEl.classList.remove("hidden");
@@ -210,6 +244,9 @@ export function renderApplicationsPage(rootEl) {
       status: statusEl.value,
       appliedDate: appliedDateEl.value,
       salary: salaryEl.value === "" ? null : Number(salaryEl.value),
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     };
 
     addApplication(newApplication);
