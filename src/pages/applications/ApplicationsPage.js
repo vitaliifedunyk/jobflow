@@ -111,6 +111,51 @@ export function renderApplicationsPage(rootEl) {
 
   let applications = [];
   let editingId = null;
+  let searchTerm = "";
+
+  applications = [
+    {
+      id: crypto.randomUUID(),
+      company: "Google",
+      position: "Frontend Developer",
+      status: "Applied",
+      appliedDate: "2026-02-10",
+      salary: 5000,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
+    {
+      id: crypto.randomUUID(),
+      company: "Amazon",
+      position: "Backend Engineer",
+      status: "Interview",
+      appliedDate: "2026-02-12",
+      salary: 6000,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
+    {
+      id: crypto.randomUUID(),
+      company: "Spotify",
+      position: "Fullstack Developer",
+      status: "Offer",
+      appliedDate: "2026-02-15",
+      salary: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
+    {
+      id: crypto.randomUUID(),
+      company: "Meta",
+      position: "React Developer",
+      status: "Rejected",
+      appliedDate: "2026-02-18",
+      salary: 5500,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    },
+  ];
+  renderTable();
 
   function addApplication(application) {
     applications.push(application);
@@ -118,7 +163,14 @@ export function renderApplicationsPage(rootEl) {
   }
   function renderTable() {
     const tableBody = rootEl.querySelector("#tableBody");
-    if (applications.length === 0) {
+    const filteredApplications = applications.filter((app) => {
+      return (
+        app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.position.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+
+    if (filteredApplications.length === 0) {
       tableBody.innerHTML = `
       <tr>
         <td colspan="6" class="px-3 py-3 text-gray-500">
@@ -130,7 +182,7 @@ export function renderApplicationsPage(rootEl) {
     }
 
     let rowsHtml = "";
-    applications.forEach(
+    filteredApplications.forEach(
       (app) =>
         (rowsHtml += `
       <tr>
@@ -169,6 +221,7 @@ export function renderApplicationsPage(rootEl) {
   const closeModalBtn = rootEl.querySelector("#closeModalBtn");
   const tableBody = rootEl.querySelector("#tableBody");
   const form = rootEl.querySelector("#applicationForm");
+  const searchInput = rootEl.querySelector("#searchInput");
 
   tableBody.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
@@ -288,5 +341,10 @@ export function renderApplicationsPage(rootEl) {
     form.reset();
     modalEl.classList.add("hidden");
     modalEl.classList.remove("flex");
+  });
+
+  searchInput.addEventListener("input", (e) => {
+    searchTerm = e.target.value.trim();
+    renderTable();
   });
 }
