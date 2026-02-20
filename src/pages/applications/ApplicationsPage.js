@@ -23,6 +23,13 @@ export function renderApplicationsPage(rootEl) {
             </select>
           </div>
 
+          <select id="sortSelect" class="rounded-lg border px-3 py-2 text-sm">
+              <option value="date_desc">Date: newest</option>
+              <option value="date_asc">Date: oldest</option>
+              <option value="salary_desc">Salary: high → low</option>
+              <option value="salary_asc">Salary: low → high</option>
+          </select>
+
           <button id="addBtn" class="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90">
             Add application
           </button>
@@ -113,6 +120,7 @@ export function renderApplicationsPage(rootEl) {
   let editingId = null;
   let searchTerm = "";
   let selectedStatus = "";
+  let sortBy = "date_desc";
 
   applications = [
     {
@@ -188,8 +196,25 @@ export function renderApplicationsPage(rootEl) {
       return;
     }
 
+    const sortedApplications = [...filteredApplications];
+
+    sortedApplications.sort((a, b) => {
+      if (sortBy === "date_desc")
+        return b.appliedDate.localeCompare(a.appliedDate);
+      if (sortBy === "date_asc")
+        return a.appliedDate.localeCompare(b.appliedDate);
+
+      const sa = a.salary ?? -Infinity;
+      const sb = b.salary ?? -Infinity;
+
+      if (sortBy === "salary_desc") return sb - sa;
+      if (sortBy === "salary_asc") return sa - sb;
+
+      return 0;
+    });
+
     let rowsHtml = "";
-    filteredApplications.forEach(
+    sortedApplications.forEach(
       (app) =>
         (rowsHtml += `
       <tr>
@@ -230,6 +255,8 @@ export function renderApplicationsPage(rootEl) {
   const form = rootEl.querySelector("#applicationForm");
   const searchInput = rootEl.querySelector("#searchInput");
   const statusFilter = rootEl.querySelector("#statusFilter");
+  const sortSelect = rootEl.querySelector("#sortSelect");
+  sortSelect.value = sortBy;
 
   tableBody.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
@@ -358,6 +385,11 @@ export function renderApplicationsPage(rootEl) {
 
   statusFilter.addEventListener("change", (e) => {
     selectedStatus = e.target.value;
+    renderTable();
+  });
+
+  sortSelect.addEventListener("change", (e) => {
+    sortBy = e.target.value;
     renderTable();
   });
 }
