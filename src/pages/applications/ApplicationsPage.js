@@ -116,58 +116,32 @@ export function renderApplicationsPage(rootEl) {
   </div>
   `;
 
-  let applications = [];
+  const STORAGE_KEY = "jobflow.applications.v1";
+
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
+  }
+
+  function loadFromStorage() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    try {
+      const data = JSON.parse(raw);
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  }
+
+  let applications = loadFromStorage();
   let editingId = null;
   let searchTerm = "";
   let selectedStatus = "";
   let sortBy = "date_desc";
 
-  applications = [
-    {
-      id: crypto.randomUUID(),
-      company: "Google",
-      position: "Frontend Developer",
-      status: "Applied",
-      appliedDate: "2026-02-10",
-      salary: 5000,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    },
-    {
-      id: crypto.randomUUID(),
-      company: "Amazon",
-      position: "Backend Engineer",
-      status: "Interview",
-      appliedDate: "2026-02-12",
-      salary: 6000,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    },
-    {
-      id: crypto.randomUUID(),
-      company: "Spotify",
-      position: "Fullstack Developer",
-      status: "Offer",
-      appliedDate: "2026-02-15",
-      salary: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    },
-    {
-      id: crypto.randomUUID(),
-      company: "Meta",
-      position: "React Developer",
-      status: "Rejected",
-      appliedDate: "2026-02-18",
-      salary: 5500,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    },
-  ];
-  renderTable();
-
   function addApplication(application) {
     applications.push(application);
+    saveToStorage();
     renderTable();
   }
 
@@ -270,6 +244,7 @@ export function renderApplicationsPage(rootEl) {
       if (!ok) return;
 
       applications = applications.filter((app) => app.id !== id);
+      saveToStorage();
       renderTable();
     }
 
@@ -370,6 +345,7 @@ export function renderApplicationsPage(rootEl) {
       };
 
       editingId = null;
+      saveToStorage();
       renderTable();
     }
 
@@ -392,4 +368,6 @@ export function renderApplicationsPage(rootEl) {
     sortBy = e.target.value;
     renderTable();
   });
+
+  renderTable();
 }
