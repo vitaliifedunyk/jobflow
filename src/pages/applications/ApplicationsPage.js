@@ -112,6 +112,7 @@ export function renderApplicationsPage(rootEl) {
   let applications = [];
   let editingId = null;
   let searchTerm = "";
+  let selectedStatus = "";
 
   applications = [
     {
@@ -161,13 +162,19 @@ export function renderApplicationsPage(rootEl) {
     applications.push(application);
     renderTable();
   }
+
   function renderTable() {
     const tableBody = rootEl.querySelector("#tableBody");
+    const q = searchTerm.toLowerCase();
+
     const filteredApplications = applications.filter((app) => {
-      return (
-        app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.position.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const matchesSearch =
+        app.company.toLowerCase().includes(q) ||
+        app.position.toLowerCase().includes(q);
+      const matchesStatus =
+        selectedStatus === "" || app.status === selectedStatus;
+
+      return matchesSearch && matchesStatus;
     });
 
     if (filteredApplications.length === 0) {
@@ -222,6 +229,7 @@ export function renderApplicationsPage(rootEl) {
   const tableBody = rootEl.querySelector("#tableBody");
   const form = rootEl.querySelector("#applicationForm");
   const searchInput = rootEl.querySelector("#searchInput");
+  const statusFilter = rootEl.querySelector("#statusFilter");
 
   tableBody.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
@@ -345,6 +353,11 @@ export function renderApplicationsPage(rootEl) {
 
   searchInput.addEventListener("input", (e) => {
     searchTerm = e.target.value.trim();
+    renderTable();
+  });
+
+  statusFilter.addEventListener("change", (e) => {
+    selectedStatus = e.target.value;
     renderTable();
   });
 }
