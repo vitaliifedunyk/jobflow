@@ -1,6 +1,6 @@
 export function renderApplicationsPage(rootEl) {
   rootEl.innerHTML = `
-    <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50">
     <header class="border-b bg-white">
       <div class="mx-auto max-w-6xl px-4 py-4">
         <h1 class="text-2xl font-semibold">JobFlow</h1>
@@ -9,36 +9,67 @@ export function renderApplicationsPage(rootEl) {
     </header>
 
     <main class="mx-auto max-w-6xl px-4 py-6">
-      <div class="rounded-xl border bg-white p-4">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-1 gap-3">
-            <input id="searchInput" class="w-full rounded-lg border px-3 py-2 text-sm"
-              placeholder="Search company or position..." />
-            <select id="statusFilter" class="rounded-lg border px-3 py-2 text-sm">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <!-- Toolbar -->
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              id="searchInput"
+              class="w-full sm:w-64 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-300"
+              placeholder="Search company or position..."
+            />
+
+            <select
+              id="statusFilter"
+              class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+            >
               <option value="">All statuses</option>
               <option value="Applied">Applied</option>
               <option value="Interview">Interview</option>
               <option value="Offer">Offer</option>
               <option value="Rejected">Rejected</option>
             </select>
-          </div>
 
-          <select id="sortSelect" class="rounded-lg border px-3 py-2 text-sm">
+            <select
+              id="sortSelect"
+              class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+            >
               <option value="date_desc">Date: newest</option>
               <option value="date_asc">Date: oldest</option>
               <option value="salary_desc">Salary: high → low</option>
               <option value="salary_asc">Salary: low → high</option>
-          </select>
+            </select>
+          </div>
 
-          <button id="addBtn" class="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90">
-            Add application
-          </button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              id="addBtn"
+              class="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90 cursor-pointer"
+            >
+              Add application
+            </button>
+
+            <button
+              id="exportBtn"
+              class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer"
+            >
+              Export JSON
+            </button>
+
+            <label
+              class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer"
+            >
+              Import JSON
+              <input type="file" id="importInput" accept="application/json" class="hidden" />
+            </label>
+          </div>
         </div>
 
+        <!-- Table -->
         <div class="mt-4 overflow-x-auto">
           <table class="w-full text-left text-sm">
             <thead class="text-xs uppercase text-gray-500">
-              <tr>
+              <tr class="border-b border-gray-200">
                 <th class="px-3 py-2">Company</th>
                 <th class="px-3 py-2">Position</th>
                 <th class="px-3 py-2">Status</th>
@@ -47,6 +78,7 @@ export function renderApplicationsPage(rootEl) {
                 <th class="px-3 py-2">Actions</th>
               </tr>
             </thead>
+
             <tbody id="tableBody">
               <tr>
                 <td class="px-3 py-3 text-gray-500" colspan="6">
@@ -58,63 +90,88 @@ export function renderApplicationsPage(rootEl) {
         </div>
       </div>
     </main>
-  </div>
 
-  <div id="appModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 p-4">
-    <div class="w-full max-w-lg rounded-xl bg-white p-4 shadow">
-      <div class="flex items-center justify-between">
-        <h2 id="modalTitle" class="text-lg font-semibold">
-          Add application
-        </h2>
-        <button id="closeModalBtn" class="rounded-lg border px-3 py-1 text-sm">
-          Close
-        </button>
-      </div>
+    <!-- Modal -->
+    <div
+      id="appModal"
+      class="fixed inset-0 hidden items-center justify-center bg-black/40 p-4"
+    >
+      <div class="w-full max-w-lg rounded-xl bg-white p-4 shadow">
+        <div class="flex items-center justify-between">
+          <h2 id="modalTitle" class="text-lg font-semibold">Add application</h2>
+          <button
+            id="closeModalBtn"
+            class="rounded-lg border border-gray-200 px-3 py-1 text-sm hover:bg-gray-50"
+          >
+            Close
+          </button>
+        </div>
 
-      <div class="mt-4 text-sm text-gray-600">
-        <form id="applicationForm">
+        <div class="mt-4 text-sm text-gray-700">
+          <form id="applicationForm">
+            <div class="mt-4">
+              <label class="block text-sm font-medium mb-1">Company</label>
+              <input
+                type="text"
+                id="companyInput"
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
+              />
+            </div>
 
-          <div class="mt-4">
-            <label class="block text-sm font-medium mb-1">Company</label>
-            <input type="text" id="companyInput" class="w-full rounded border px-3 py-2 text-sm" />
-          </div>
+            <div class="mt-4">
+              <label class="block text-sm font-medium mb-1">Position</label>
+              <input
+                type="text"
+                id="positionInput"
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
+              />
+            </div>
 
-          <div class="mt-4">
-            <label class="block text-sm font-medium mb-1">Position</label>
-            <input type="text" id="positionInput" class="w-full rounded border px-3 py-2 text-sm" />
-          </div>
+            <div class="mt-4">
+              <label class="block text-sm font-medium mb-1">Status</label>
+              <select
+                id="statusInput"
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              >
+                <option value="Applied">Applied</option>
+                <option value="Interview">Interview</option>
+                <option value="Offer">Offer</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
 
-          <div class="mt-4">
-            <label class="block text-sm font-medium mb-1">Status</label>
-            <select id="statusInput" class="w-full rounded border px-3 py-2 text-sm">
-              <option value="Applied">Applied</option>
-              <option value="Interview">Interview</option>
-              <option value="Offer">Offer</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-          </div>
+            <div class="mt-4">
+              <label class="block text-sm font-medium mb-1">Applied Date</label>
+              <input
+                type="date"
+                id="dateInput"
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
+              />
+            </div>
 
-          <div class="mt-4">
-            <label class="block text-sm font-medium mb-1">Applied Date</label>
-            <input type="date" id="dateInput" class="w-full rounded border px-3 py-2 text-sm" />
-          </div>
+            <div class="mt-4">
+              <label class="block text-sm font-medium mb-1">Salary</label>
+              <input
+                type="number"
+                id="salaryInput"
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
+              />
+            </div>
 
-          <div class="mt-4">
-            <label class="block text-sm font-medium mb-1">Salary</label>
-            <input type="number" id="salaryInput" class="w-full rounded border px-3 py-2 text-sm" />
-          </div>
-
-          <div class="mt-6 flex justify-end">
-            <button type="submit" class="rounded bg-black px-4 py-2 text-white text-sm">
-              Save application
-            </button>
-          </div>
-
-        </form>
+            <div class="mt-6 flex justify-end gap-2">
+              <button
+                type="submit"
+                class="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+              >
+                Save application
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-  `;
+`;
 
   const STORAGE_KEY = "jobflow.applications.v1";
 
@@ -191,32 +248,32 @@ export function renderApplicationsPage(rootEl) {
     sortedApplications.forEach(
       (app) =>
         (rowsHtml += `
-      <tr>
-        <td class="px-3 py-2">${app.company}</td>
-        <td class="px-3 py-2">${app.position}</td>
-        <td class="px-3 py-2">${app.status}</td>
-        <td class="px-3 py-2">${app.appliedDate}</td>
-        <td class="px-3 py-2">${app.salary ?? "-"}</td>
-        <td class="px-3 py-2">
-          <div class="flex gap-2">
-            <button
-              class="rounded border px-2 py-1 text-xs"
-              data-action="edit"
-              data-id="${app.id}"
-            >
-              Edit
-            </button>
-            <button
-              class="rounded border px-2 py-1 text-xs"
-              data-action="delete"
-              data-id="${app.id}"
-            >
-              Delete
-            </button>
-          </div>
-        </td>
-      </tr>
-    `),
+          <tr class="border-t border-gray-100">
+            <td class="px-3 py-2">${app.company}</td>
+            <td class="px-3 py-2">${app.position}</td>
+            <td class="px-3 py-2">${app.status}</td>
+            <td class="px-3 py-2">${app.appliedDate}</td>
+            <td class="px-3 py-2">${app.salary ?? "-"}</td>
+            <td class="px-3 py-2">
+              <div class="flex gap-2">
+                <button
+                  class="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium hover:bg-gray-50 cursor-pointer"
+                  data-action="edit"
+                  data-id="${app.id}"
+                >
+                  Edit
+                </button>
+                <button
+                  class="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium hover:bg-gray-50 cursor-pointer"
+                  data-action="delete"
+                  data-id="${app.id}"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        `),
     );
     tableBody.innerHTML = rowsHtml;
   }
@@ -231,6 +288,8 @@ export function renderApplicationsPage(rootEl) {
   const statusFilter = rootEl.querySelector("#statusFilter");
   const sortSelect = rootEl.querySelector("#sortSelect");
   sortSelect.value = sortBy;
+  const exportBtn = rootEl.querySelector("#exportBtn");
+  const importInput = rootEl.querySelector("#importInput");
 
   tableBody.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
@@ -367,6 +426,20 @@ export function renderApplicationsPage(rootEl) {
   sortSelect.addEventListener("change", (e) => {
     sortBy = e.target.value;
     renderTable();
+  });
+
+  exportBtn.addEventListener("click", () => {
+    const dataStr = JSON.stringify(applications, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jobflow-applications.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
   });
 
   renderTable();
