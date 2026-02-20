@@ -56,7 +56,9 @@ export function renderApplicationsPage(rootEl) {
   <div id="appModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 p-4">
     <div class="w-full max-w-lg rounded-xl bg-white p-4 shadow">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">Add application</h2>
+        <h2 id="modalTitle" class="text-lg font-semibold">
+          Add application
+        </h2>
         <button id="closeModalBtn" class="rounded-lg border px-3 py-1 text-sm">
           Close
         </button>
@@ -108,6 +110,7 @@ export function renderApplicationsPage(rootEl) {
   `;
 
   let applications = [];
+  let editingId = null;
 
   function addApplication(application) {
     applications.push(application);
@@ -160,19 +163,12 @@ export function renderApplicationsPage(rootEl) {
     tableBody.innerHTML = rowsHtml;
   }
 
-  addApplication({
-    company: "Google",
-    position: "Frontend Dev",
-    status: "Applied",
-    appliedDate: "2026-02-19",
-    salary: 5000,
-  });
-  renderTable();
-
   const addBtn = rootEl.querySelector("#addBtn");
   const modalEl = rootEl.querySelector("#appModal");
+  const modalTitle = rootEl.querySelector("#modalTitle");
   const closeModalBtn = rootEl.querySelector("#closeModalBtn");
   const tableBody = rootEl.querySelector("#tableBody");
+  const form = rootEl.querySelector("#applicationForm");
 
   tableBody.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
@@ -188,9 +184,29 @@ export function renderApplicationsPage(rootEl) {
       applications = applications.filter((app) => app.id !== id);
       renderTable();
     }
+
+    if (action === "edit") {
+      const app = applications.find((a) => a.id === id);
+      if (!app) return;
+      editingId = id;
+
+      form.querySelector("#companyInput").value = app.company;
+      form.querySelector("#positionInput").value = app.position;
+      form.querySelector("#statusInput").value = app.status;
+      form.querySelector("#dateInput").value = app.appliedDate;
+      form.querySelector("#salaryInput").value = app.salary ?? "";
+
+      modalTitle.textContent = "Edit application";
+
+      modalEl.classList.remove("hidden");
+      modalEl.classList.add("flex");
+    }
   });
 
   addBtn.addEventListener("click", () => {
+    editingId = null;
+    form.reset();
+    modalTitle.textContent = "Add application";
     modalEl.classList.remove("hidden");
     modalEl.classList.add("flex");
   });
@@ -200,16 +216,12 @@ export function renderApplicationsPage(rootEl) {
     modalEl.classList.remove("flex");
   });
 
-  // Optional: close modal when clicking on backdrop
   modalEl.addEventListener("click", (e) => {
     if (e.target === modalEl) {
       modalEl.classList.add("hidden");
       modalEl.classList.remove("flex");
     }
   });
-
-  const form = rootEl.querySelector("#applicationForm");
-  // console.log(form);
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -238,18 +250,41 @@ export function renderApplicationsPage(rootEl) {
       return;
     }
 
-    const newApplication = {
-      company: companyEl.value,
-      position: positionEl.value,
-      status: statusEl.value,
-      appliedDate: appliedDateEl.value,
-      salary: salaryEl.value === "" ? null : Number(salaryEl.value),
-      id: crypto.randomUUID(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+    const company = companyEl.value.trim();
+    const position = positionEl.value.trim();
+    const status = statusEl.value;
+    const appliedDate = appliedDateEl.value;
+    const salary = salaryEl.value === "" ? null : Number(salaryEl.value);
 
-    addApplication(newApplication);
+    if (editingId === null) {
+      addApplication({
+        id: crypto.randomUUID(),
+        company,
+        position,
+        status,
+        appliedDate,
+        salary,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    } else {
+      const idx = applications.findIndex((a) => a.id === editingId);
+      if (idx === -1) return;
+
+      applications[idx] = {
+        ...applications[idx],
+        company,
+        position,
+        status,
+        appliedDate,
+        salary,
+        updatedAt: Date.now(),
+      };
+
+      editingId = null;
+      renderTable();
+    }
+
     form.reset();
     modalEl.classList.add("hidden");
     modalEl.classList.remove("flex");
