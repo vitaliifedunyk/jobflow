@@ -442,5 +442,51 @@ export function renderApplicationsPage(rootEl) {
     URL.revokeObjectURL(url);
   });
 
+  importInput.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+
+      if (!Array.isArray(parsed)) {
+        alert("Invalid file: expected an array of applications.");
+        return;
+      }
+
+      // мінімальна нормалізація
+      const normalized = parsed.map((item) => ({
+        id: item.id ?? crypto.randomUUID(),
+        company: String(item.company ?? ""),
+        position: String(item.position ?? ""),
+        status: ["Applied", "Interview", "Offer", "Rejected"].includes(
+          item.status,
+        )
+          ? item.status
+          : "Applied",
+        appliedDate: String(item.appliedDate ?? ""),
+        salary:
+          item.salary === null ||
+          item.salary === undefined ||
+          item.salary === ""
+            ? null
+            : Number(item.salary),
+        createdAt: Number(item.createdAt ?? Date.now()),
+        updatedAt: Number(item.updatedAt ?? Date.now()),
+      }));
+
+      applications = normalized;
+      saveToStorage();
+      renderTable();
+
+      // щоб можна було імпортувати той самий файл повторно
+      e.target.value = "";
+      alert("Import successful ✅");
+    } catch (err) {
+      alert("Import failed: invalid JSON file.");
+    }
+  });
+
   renderTable();
 }
