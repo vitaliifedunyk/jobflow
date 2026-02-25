@@ -145,6 +145,8 @@ export function renderApplicationsPage(rootEl) {
               <input
                 type="date"
                 id="dateInput"
+                min="1000-01-01"
+                max="9999-12-31"
                 class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-300"
               />
             </div>
@@ -368,6 +370,12 @@ export function renderApplicationsPage(rootEl) {
 
     if (appliedDateEl.value === "") {
       alert("Applied date is required");
+      appliedDateEl.focus();
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(appliedDateEl.value)) {
+      alert("Applied date year must be 4 digits (YYYY-MM-DD)");
       appliedDateEl.focus();
       return;
     }
