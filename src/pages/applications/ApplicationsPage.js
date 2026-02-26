@@ -1,3 +1,18 @@
+import {
+  addApplication,
+  createState,
+  loadState,
+  normalizeApplication,
+  persist,
+  removeApplication,
+  setEditing,
+  setSearch,
+  setSort,
+  setStatus,
+  updateApplication,
+} from "./state";
+import { getVisibleApplications } from "./selectors";
+
 export function renderApplicationsPage(rootEl) {
   rootEl.innerHTML = `
   <div class="min-h-screen bg-gray-50">
@@ -175,50 +190,40 @@ export function renderApplicationsPage(rootEl) {
   </div>
 `;
 
-  const STORAGE_KEY = "jobflow.applications.v1";
+  const state = createState();
+  loadState(state);
 
-  function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
+  const addBtn = rootEl.querySelector("#addBtn");
+  const modalEl = rootEl.querySelector("#appModal");
+  const modalTitle = rootEl.querySelector("#modalTitle");
+  const closeModalBtn = rootEl.querySelector("#closeModalBtn");
+  const tableBody = rootEl.querySelector("#tableBody");
+  const form = rootEl.querySelector("#applicationForm");
+  const searchInput = rootEl.querySelector("#searchInput");
+  const statusFilter = rootEl.querySelector("#statusFilter");
+  const sortSelect = rootEl.querySelector("#sortSelect");
+  const exportBtn = rootEl.querySelector("#exportBtn");
+  const importInput = rootEl.querySelector("#importInput");
+  sortSelect.value = state.sortBy;
+
+  function openModal() {
+    modalEl.classList.remove("hidden");
+    modalEl.classList.add("flex");
   }
 
-  function loadFromStorage() {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    try {
-      const data = JSON.parse(raw);
-      return Array.isArray(data) ? data : [];
-    } catch {
-      return [];
-    }
-  }
-
-  let applications = loadFromStorage();
-  let editingId = null;
-  let searchTerm = "";
-  let selectedStatus = "";
-  let sortBy = "date_desc";
-
-  function addApplication(application) {
-    applications.push(application);
-    saveToStorage();
-    renderTable();
+  function closeModal() {
+    modalEl.classList.add("hidden");
+    modalEl.classList.remove("flex");
   }
 
   function renderTable() {
-    const tableBody = rootEl.querySelector("#tableBody");
-    const q = searchTerm.toLowerCase();
-
-    const filteredApplications = applications.filter((app) => {
-      const matchesSearch =
-        app.company.toLowerCase().includes(q) ||
-        app.position.toLowerCase().includes(q);
-      const matchesStatus =
-        selectedStatus === "" || app.status === selectedStatus;
-
-      return matchesSearch && matchesStatus;
+    const visibleApplications = getVisibleApplications(state.applications, {
+      searchTerm: state.searchTerm,
+      selectedStatus: state.selectedStatus,
+      sortBy: state.sortBy,
     });
 
-    if (filteredApplications.length === 0) {
+    if (visibleApplications.length === 0) {
       tableBody.innerHTML = `
       <tr>
         <td colspan="6" class="px-3 py-3 text-gray-500">
@@ -229,25 +234,8 @@ export function renderApplicationsPage(rootEl) {
       return;
     }
 
-    const sortedApplications = [...filteredApplications];
-
-    sortedApplications.sort((a, b) => {
-      if (sortBy === "date_desc")
-        return b.appliedDate.localeCompare(a.appliedDate);
-      if (sortBy === "date_asc")
-        return a.appliedDate.localeCompare(b.appliedDate);
-
-      const sa = a.salary ?? -Infinity;
-      const sb = b.salary ?? -Infinity;
-
-      if (sortBy === "salary_desc") return sb - sa;
-      if (sortBy === "salary_asc") return sa - sb;
-
-      return 0;
-    });
-
     let rowsHtml = "";
-    sortedApplications.forEach(
+    visibleApplications.forEach(
       (app) =>
         (rowsHtml += `
           <tr class="border-t border-gray-100">
@@ -277,21 +265,9 @@ export function renderApplicationsPage(rootEl) {
           </tr>
         `),
     );
+
     tableBody.innerHTML = rowsHtml;
   }
-
-  const addBtn = rootEl.querySelector("#addBtn");
-  const modalEl = rootEl.querySelector("#appModal");
-  const modalTitle = rootEl.querySelector("#modalTitle");
-  const closeModalBtn = rootEl.querySelector("#closeModalBtn");
-  const tableBody = rootEl.querySelector("#tableBody");
-  const form = rootEl.querySelector("#applicationForm");
-  const searchInput = rootEl.querySelector("#searchInput");
-  const statusFilter = rootEl.querySelector("#statusFilter");
-  const sortSelect = rootEl.querySelector("#sortSelect");
-  sortSelect.value = sortBy;
-  const exportBtn = rootEl.querySelector("#exportBtn");
-  const importInput = rootEl.querySelector("#importInput");
 
   tableBody.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
@@ -304,15 +280,16 @@ export function renderApplicationsPage(rootEl) {
       const ok = confirm("Delete this application?");
       if (!ok) return;
 
-      applications = applications.filter((app) => app.id !== id);
-      saveToStorage();
+      removeApplication(state, id);
+      persist(state);
       renderTable();
     }
 
     if (action === "edit") {
-      const app = applications.find((a) => a.id === id);
+      const app = state.applications.find((item) => item.id === id);
       if (!app) return;
-      editingId = id;
+
+      setEditing(state, id);
 
       form.querySelector("#companyInput").value = app.company;
       form.querySelector("#positionInput").value = app.position;
@@ -321,29 +298,22 @@ export function renderApplicationsPage(rootEl) {
       form.querySelector("#salaryInput").value = app.salary ?? "";
 
       modalTitle.textContent = "Edit application";
-
-      modalEl.classList.remove("hidden");
-      modalEl.classList.add("flex");
+      openModal();
     }
   });
 
   addBtn.addEventListener("click", () => {
-    editingId = null;
+    setEditing(state, null);
     form.reset();
     modalTitle.textContent = "Add application";
-    modalEl.classList.remove("hidden");
-    modalEl.classList.add("flex");
+    openModal();
   });
 
-  closeModalBtn.addEventListener("click", () => {
-    modalEl.classList.add("hidden");
-    modalEl.classList.remove("flex");
-  });
+  closeModalBtn.addEventListener("click", closeModal);
 
   modalEl.addEventListener("click", (e) => {
     if (e.target === modalEl) {
-      modalEl.classList.add("hidden");
-      modalEl.classList.remove("flex");
+      closeModal();
     }
   });
 
@@ -386,8 +356,8 @@ export function renderApplicationsPage(rootEl) {
     const appliedDate = appliedDateEl.value;
     const salary = salaryEl.value === "" ? null : Number(salaryEl.value);
 
-    if (editingId === null) {
-      addApplication({
+    if (state.editingId === null) {
+      addApplication(state, {
         id: crypto.randomUUID(),
         company,
         position,
@@ -398,46 +368,42 @@ export function renderApplicationsPage(rootEl) {
         updatedAt: Date.now(),
       });
     } else {
-      const idx = applications.findIndex((a) => a.id === editingId);
-      if (idx === -1) return;
-
-      applications[idx] = {
-        ...applications[idx],
+      updateApplication(state, state.editingId, {
         company,
         position,
         status,
         appliedDate,
         salary,
         updatedAt: Date.now(),
-      };
+      });
 
-      editingId = null;
-      saveToStorage();
-      renderTable();
+      setEditing(state, null);
     }
 
+    persist(state);
+    renderTable();
+
     form.reset();
-    modalEl.classList.add("hidden");
-    modalEl.classList.remove("flex");
+    closeModal();
   });
 
   searchInput.addEventListener("input", (e) => {
-    searchTerm = e.target.value.trim();
+    setSearch(state, e.target.value.trim());
     renderTable();
   });
 
   statusFilter.addEventListener("change", (e) => {
-    selectedStatus = e.target.value;
+    setStatus(state, e.target.value);
     renderTable();
   });
 
   sortSelect.addEventListener("change", (e) => {
-    sortBy = e.target.value;
+    setSort(state, e.target.value);
     renderTable();
   });
 
   exportBtn.addEventListener("click", () => {
-    const dataStr = JSON.stringify(applications, null, 2);
+    const dataStr = JSON.stringify(state.applications, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
 
     const url = URL.createObjectURL(blob);
@@ -463,35 +429,13 @@ export function renderApplicationsPage(rootEl) {
         return;
       }
 
-      // мінімальна нормалізація
-      const normalized = parsed.map((item) => ({
-        id: item.id ?? crypto.randomUUID(),
-        company: String(item.company ?? ""),
-        position: String(item.position ?? ""),
-        status: ["Applied", "Interview", "Offer", "Rejected"].includes(
-          item.status,
-        )
-          ? item.status
-          : "Applied",
-        appliedDate: String(item.appliedDate ?? ""),
-        salary:
-          item.salary === null ||
-          item.salary === undefined ||
-          item.salary === ""
-            ? null
-            : Number(item.salary),
-        createdAt: Number(item.createdAt ?? Date.now()),
-        updatedAt: Number(item.updatedAt ?? Date.now()),
-      }));
-
-      applications = normalized;
-      saveToStorage();
+      state.applications = parsed.map(normalizeApplication);
+      persist(state);
       renderTable();
 
-      // щоб можна було імпортувати той самий файл повторно
       e.target.value = "";
       alert("Import successful ✅");
-    } catch (err) {
+    } catch {
       alert("Import failed: invalid JSON file.");
     }
   });
