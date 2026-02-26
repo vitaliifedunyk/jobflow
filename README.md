@@ -137,4 +137,4 @@ Run development server:
 
 ## Author
 
-Built as part of a structured fullstack learning roadmap.
+vitaliifedunyk
