@@ -31,6 +31,38 @@ This project was built as part of a frontend portfolio to demonstrate:
 
 ---
 
+## Project Structure (Current)
+
+Main entry:
+
+- `index.html` → `src/app/main.js`
+
+Applications page modules:
+
+- `src/pages/applications/ApplicationsPage.js` — page composition and event binding
+- `src/pages/applications/state.js` — state, CRUD operations, normalization, persistence hooks
+- `src/pages/applications/selectors.js` — pure filter/search/sort logic
+- `src/pages/applications/render.js` — table/modal/form rendering helpers
+- `src/pages/applications/domRefs.js` — centralized DOM queries
+- `src/shared/storage.js` — safe JSON load/save helpers
+
+---
+
+## Data Flow
+
+Core flow is intentionally simple:
+
+`UI event` → `state update` → `selector (getVisibleApplications)` → `render (renderTable)`
+
+Example:
+
+- User types in search/filter/sort controls
+- State values are updated (`searchTerm`, `selectedStatus`, `sortBy`)
+- Visible list is recalculated by selector
+- Table is re-rendered from the computed list
+
+---
+
 ## Application Model
 
 Each application contains:
