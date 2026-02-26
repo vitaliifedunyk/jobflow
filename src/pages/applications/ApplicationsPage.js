@@ -1,3 +1,6 @@
+import { getRefs } from "./domRefs";
+import { getVisibleApplications } from "./selectors";
+import { closeModal, fillForm, openModal, renderTable, resetForm } from "./render";
 import {
   addApplication,
   createState,
@@ -11,7 +14,6 @@ import {
   setStatus,
   updateApplication,
 } from "./state";
-import { getVisibleApplications } from "./selectors";
 
 export function renderApplicationsPage(rootEl) {
   rootEl.innerHTML = `
@@ -193,83 +195,20 @@ export function renderApplicationsPage(rootEl) {
   const state = createState();
   loadState(state);
 
-  const addBtn = rootEl.querySelector("#addBtn");
-  const modalEl = rootEl.querySelector("#appModal");
-  const modalTitle = rootEl.querySelector("#modalTitle");
-  const closeModalBtn = rootEl.querySelector("#closeModalBtn");
-  const tableBody = rootEl.querySelector("#tableBody");
-  const form = rootEl.querySelector("#applicationForm");
-  const searchInput = rootEl.querySelector("#searchInput");
-  const statusFilter = rootEl.querySelector("#statusFilter");
-  const sortSelect = rootEl.querySelector("#sortSelect");
-  const exportBtn = rootEl.querySelector("#exportBtn");
-  const importInput = rootEl.querySelector("#importInput");
-  sortSelect.value = state.sortBy;
+  const refs = getRefs(rootEl);
+  refs.sortSelect.value = state.sortBy;
 
-  function openModal() {
-    modalEl.classList.remove("hidden");
-    modalEl.classList.add("flex");
-  }
-
-  function closeModal() {
-    modalEl.classList.add("hidden");
-    modalEl.classList.remove("flex");
-  }
-
-  function renderTable() {
+  function refreshTable() {
     const visibleApplications = getVisibleApplications(state.applications, {
       searchTerm: state.searchTerm,
       selectedStatus: state.selectedStatus,
       sortBy: state.sortBy,
     });
 
-    if (visibleApplications.length === 0) {
-      tableBody.innerHTML = `
-      <tr>
-        <td colspan="6" class="px-3 py-3 text-gray-500">
-          No applications yet.
-        </td>
-      </tr>
-      `;
-      return;
-    }
-
-    let rowsHtml = "";
-    visibleApplications.forEach(
-      (app) =>
-        (rowsHtml += `
-          <tr class="border-t border-gray-100">
-            <td class="px-3 py-2">${app.company}</td>
-            <td class="px-3 py-2">${app.position}</td>
-            <td class="px-3 py-2">${app.status}</td>
-            <td class="px-3 py-2">${app.appliedDate}</td>
-            <td class="px-3 py-2">${app.salary ?? "-"}</td>
-            <td class="px-3 py-2">
-              <div class="flex gap-2">
-                <button
-                  class="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium hover:bg-gray-50 cursor-pointer"
-                  data-action="edit"
-                  data-id="${app.id}"
-                >
-                  Edit
-                </button>
-                <button
-                  class="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium hover:bg-gray-50 cursor-pointer"
-                  data-action="delete"
-                  data-id="${app.id}"
-                >
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-        `),
-    );
-
-    tableBody.innerHTML = rowsHtml;
+    renderTable(refs.tableBody, visibleApplications);
   }
 
-  tableBody.addEventListener("click", (e) => {
+  refs.tableBody.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
 
@@ -282,7 +221,7 @@ export function renderApplicationsPage(rootEl) {
 
       removeApplication(state, id);
       persist(state);
-      renderTable();
+      refreshTable();
     }
 
     if (action === "edit") {
@@ -290,71 +229,61 @@ export function renderApplicationsPage(rootEl) {
       if (!app) return;
 
       setEditing(state, id);
-
-      form.querySelector("#companyInput").value = app.company;
-      form.querySelector("#positionInput").value = app.position;
-      form.querySelector("#statusInput").value = app.status;
-      form.querySelector("#dateInput").value = app.appliedDate;
-      form.querySelector("#salaryInput").value = app.salary ?? "";
-
-      modalTitle.textContent = "Edit application";
-      openModal();
+      fillForm(refs.form, app);
+      refs.modalTitle.textContent = "Edit application";
+      openModal(refs.modalEl);
     }
   });
 
-  addBtn.addEventListener("click", () => {
+  refs.addBtn.addEventListener("click", () => {
     setEditing(state, null);
-    form.reset();
-    modalTitle.textContent = "Add application";
-    openModal();
+    resetForm(refs.form);
+    refs.modalTitle.textContent = "Add application";
+    openModal(refs.modalEl);
   });
 
-  closeModalBtn.addEventListener("click", closeModal);
+  refs.closeModalBtn.addEventListener("click", () => {
+    closeModal(refs.modalEl);
+  });
 
-  modalEl.addEventListener("click", (e) => {
-    if (e.target === modalEl) {
-      closeModal();
+  refs.modalEl.addEventListener("click", (e) => {
+    if (e.target === refs.modalEl) {
+      closeModal(refs.modalEl);
     }
   });
 
-  form.addEventListener("submit", (e) => {
+  refs.form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    const companyEl = form.querySelector("#companyInput");
-    const positionEl = form.querySelector("#positionInput");
-    const statusEl = form.querySelector("#statusInput");
-    const appliedDateEl = form.querySelector("#dateInput");
-    const salaryEl = form.querySelector("#salaryInput");
-
-    if (companyEl.value.trim().length < 2) {
+    if (refs.companyInput.value.trim().length < 2) {
       alert("Company is required (min 2 chars)");
-      companyEl.focus();
+      refs.companyInput.focus();
       return;
     }
 
-    if (positionEl.value.trim().length < 2) {
+    if (refs.positionInput.value.trim().length < 2) {
       alert("Position is required (min 2 chars)");
-      positionEl.focus();
+      refs.positionInput.focus();
       return;
     }
 
-    if (appliedDateEl.value === "") {
+    if (refs.dateInput.value === "") {
       alert("Applied date is required");
-      appliedDateEl.focus();
+      refs.dateInput.focus();
       return;
     }
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(appliedDateEl.value)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(refs.dateInput.value)) {
       alert("Applied date year must be 4 digits (YYYY-MM-DD)");
-      appliedDateEl.focus();
+      refs.dateInput.focus();
       return;
     }
 
-    const company = companyEl.value.trim();
-    const position = positionEl.value.trim();
-    const status = statusEl.value;
-    const appliedDate = appliedDateEl.value;
-    const salary = salaryEl.value === "" ? null : Number(salaryEl.value);
+    const company = refs.companyInput.value.trim();
+    const position = refs.positionInput.value.trim();
+    const status = refs.statusInput.value;
+    const appliedDate = refs.dateInput.value;
+    const salary = refs.salaryInput.value === "" ? null : Number(refs.salaryInput.value);
 
     if (state.editingId === null) {
       addApplication(state, {
@@ -381,28 +310,28 @@ export function renderApplicationsPage(rootEl) {
     }
 
     persist(state);
-    renderTable();
+    refreshTable();
 
-    form.reset();
-    closeModal();
+    resetForm(refs.form);
+    closeModal(refs.modalEl);
   });
 
-  searchInput.addEventListener("input", (e) => {
+  refs.searchInput.addEventListener("input", (e) => {
     setSearch(state, e.target.value.trim());
-    renderTable();
+    refreshTable();
   });
 
-  statusFilter.addEventListener("change", (e) => {
+  refs.statusFilter.addEventListener("change", (e) => {
     setStatus(state, e.target.value);
-    renderTable();
+    refreshTable();
   });
 
-  sortSelect.addEventListener("change", (e) => {
+  refs.sortSelect.addEventListener("change", (e) => {
     setSort(state, e.target.value);
-    renderTable();
+    refreshTable();
   });
 
-  exportBtn.addEventListener("click", () => {
+  refs.exportBtn.addEventListener("click", () => {
     const dataStr = JSON.stringify(state.applications, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
 
@@ -416,7 +345,7 @@ export function renderApplicationsPage(rootEl) {
     URL.revokeObjectURL(url);
   });
 
-  importInput.addEventListener("change", async (e) => {
+  refs.importInput.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -431,7 +360,7 @@ export function renderApplicationsPage(rootEl) {
 
       state.applications = parsed.map(normalizeApplication);
       persist(state);
-      renderTable();
+      refreshTable();
 
       e.target.value = "";
       alert("Import successful ✅");
@@ -440,5 +369,5 @@ export function renderApplicationsPage(rootEl) {
     }
   });
 
-  renderTable();
+  refreshTable();
 }
