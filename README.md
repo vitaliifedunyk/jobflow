@@ -46,9 +46,17 @@ npm run preview
 
 ---
 
-## Live Demo
+## Deploy (GitHub Pages branch)
 
-🔗 https://jobflow-nu.vercel.app/
+npm run deploy
+
+This publishes `dist/` to the `gh-pages` branch.
+
+---
+
+## Live Demo (GitHub Pages)
+
+https://vitaliifedunyk.github.io/jobflow/
 
 ---
 
